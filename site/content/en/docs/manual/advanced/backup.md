@@ -24,6 +24,12 @@ and `task_<task_name>_backup_<date>_<time>.zip` for the tasks.
 
 !["Export project" window with backup parameters](/images/image253.jpg)
 
+### Lightweight backup (cloud storage tasks)
+Turn on **Use lightweight backup whenever possible** to create a smaller backup that skips copying media for tasks/projects whose data comes from an attached cloud storage. The backup contains metadata/annotations and references instead of media.
+If lightweight backup is used, the suffix `_lightweight` is added to the default backup name .
+Default: **on** in the dialog.
+
+
 If you want to save a backup to a specific
 {{< ilink "/docs/manual/basics/attach-cloud-storage" "attached cloud storage" >}},
 you should additionally turn off the switch `Use default settings`, select the `Cloud storage` value
@@ -55,6 +61,8 @@ click the `Create from backup` button and select the archive you need.
 
 As a result, you'll get a task containing data, parameters, and annotations of
 the previously exported task.
+
+> Note: When restoring a lightweight backup created from a cloud-storage task, the new task’s specific cloud storage is **not set**. After restore, open **Task details** and select the appropriate cloud storage.
 
 ## Backup file structure
 

@@ -24,6 +24,8 @@ The next actions are available on this page:
     In the list of users, you will only see the users of the
     {{< ilink "/docs/manual/advanced/organization" "organization" >}}
     where the task is created.
+6. **Cloud storage** — for tasks whose data storage is cloud-based, select or change the associated cloud storage using the **Cloud storage** selector in Task details.
+    After restoring a lightweight backup, this field will be empty; set it here to re-link media.
 
 **Jobs** is a list of all jobs for a particular task. Here you can find the next data:
 - Jobs name with a hyperlink to it.
