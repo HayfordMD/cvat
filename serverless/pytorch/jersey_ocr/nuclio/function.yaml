@@ -1,0 +1,62 @@
+metadata:
+  name: pth-jersey-ocr
+  namespace: cvat
+  annotations:
+    name: "Jersey OCR"
+    version: "2"
+    type: "detector"
+    framework: "pytorch"
+    spec: |
+      [
+        { "id": 1, "name": "jersey_number" }
+      ]
+    description: "OCR model specialized for detecting and recognizing player jersey numbers in sports footage"
+
+spec:
+  description: Jersey Number OCR for sports analysis
+  runtime: python:3.8
+  handler: main:handler
+  eventTimeout: 30s
+  env:
+    - name: PYTHONDONTWRITEBYTECODE
+      value: "1"
+  
+  build:
+    image: cvat.pth.jersey.ocr:latest
+    baseImage: pytorch/pytorch:1.13.0-cuda11.6-cudnn8-runtime
+    
+    directives:
+      preCopy:
+        - kind: USER
+          value: root
+        - kind: RUN
+          value: apt-get update && apt-get -y install libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1 libglu1 libgl1 libgomp1 wget git libpython3-dev
+        - kind: RUN
+          value: pip install --no-cache-dir opencv-python pillow easyocr paddleocr paddlepaddle
+        - kind: WORKDIR
+          value: /opt/nuclio
+
+      postCopy:
+        - kind: RUN
+          value: pip install --no-cache-dir -r requirements.txt
+        - kind: WORKDIR
+          value: /opt/nuclio
+        
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 1
+      kind: http
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume

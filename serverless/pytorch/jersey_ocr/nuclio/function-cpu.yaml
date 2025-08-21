@@ -1,0 +1,61 @@
+metadata:
+  name: pth-jersey-ocr-cpu
+  namespace: cvat
+  annotations:
+    name: "Jersey OCR (CPU)"
+    version: "2"
+    type: "detector"
+    framework: "pytorch"
+    spec: |
+      [
+        { "id": 1, "name": "jersey_number" }
+      ]
+    description: "OCR model for detecting player jersey numbers (CPU version)"
+
+spec:
+  description: Jersey Number OCR for sports analysis (CPU)
+  runtime: python:3.8
+  handler: main:handler
+  eventTimeout: 30s
+  env:
+    - name: PYTHONDONTWRITEBYTECODE
+      value: "1"
+  
+  build:
+    image: cvat.pth.jersey.ocr.cpu:latest
+    baseImage: python:3.8-slim
+    functionSourceCode: "# This will be replaced by actual source code during deployment"
+    
+    directives:
+      preCopy:
+        - kind: USER
+          value: root
+        - kind: RUN
+          value: apt-get update && apt-get -y install libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1 libglu1 libgl1 wget git gcc g++ libpython3-dev
+        - kind: RUN
+          value: pip install --no-cache-dir torch==1.13.0+cpu torchvision==0.14.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        - kind: RUN
+          value: pip install --no-cache-dir opencv-python pillow easyocr
+        - kind: WORKDIR
+          value: /opt/nuclio
+
+      postCopy:
+        - kind: RUN
+          value: pip install --no-cache-dir pyyaml numpy
+        - kind: WORKDIR
+          value: /opt/nuclio
+        
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 2
+      kind: http
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume

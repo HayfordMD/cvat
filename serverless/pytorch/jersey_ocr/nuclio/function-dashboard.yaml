@@ -1,0 +1,119 @@
+metadata:
+  name: pth-jersey-ocr-simple
+  namespace: cvat
+  annotations:
+    name: "Jersey OCR Simple"
+    version: "1"
+    type: "detector"
+    framework: "pytorch"
+    spec: |
+      [
+        { "id": 1, "name": "jersey_number" }
+      ]
+    description: "Simple OCR model for detecting player jersey numbers"
+
+spec:
+  description: Jersey Number OCR for sports analysis (Simple Version)
+  runtime: python:3.8
+  handler: main:handler
+  eventTimeout: 30s
+  
+  build:
+    image: cvat.pth.jersey.ocr.simple:latest
+    baseImage: python:3.8-slim
+    codeEntryType: sourceCode
+    functionSourceCode: |
+      import json
+      import base64
+      from PIL import Image
+      import io
+      import yaml
+      import cv2
+      import numpy as np
+      import re
+      
+      class SimpleOCR:
+          def __init__(self, labels):
+              self.labels = labels
+              self.jersey_pattern = re.compile(r'^[0-9]{1,2}$')
+          
+          def detect_numbers(self, image):
+              # Convert PIL to numpy
+              img_np = np.array(image)
+              
+              # Convert to grayscale
+              if len(img_np.shape) == 3:
+                  gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+              else:
+                  gray = img_np
+              
+              # Apply threshold
+              _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+              
+              # Find contours
+              contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+              
+              results = []
+              for contour in contours:
+                  x, y, w, h = cv2.boundingRect(contour)
+                  # Filter by size (potential jersey numbers)
+                  if 20 < w < 200 and 30 < h < 200:
+                      results.append({
+                          "confidence": 0.8,
+                          "label": self.labels.get(1, "jersey_number"),
+                          "points": [x, y, x+w, y+h],
+                          "type": "rectangle"
+                      })
+              
+              return results
+      
+      def init_context(context):
+          context.logger.info("Init context... 0%")
+          
+          # Read labels from function.yaml
+          labels = {1: "jersey_number"}
+          
+          # Initialize simple OCR
+          model = SimpleOCR(labels)
+          context.user_data.model = model
+          
+          context.logger.info("Init context... 100%")
+      
+      def handler(context, event):
+          context.logger.info("Run Jersey OCR model")
+          data = event.body
+          
+          # Decode the input image
+          buf = io.BytesIO(base64.b64decode(data["image"]))
+          image = Image.open(buf)
+          
+          # Run detection
+          results = context.user_data.model.detect_numbers(image)
+          
+          return context.Response(
+              body=json.dumps(results),
+              headers={},
+              content_type='application/json',
+              status_code=200
+          )
+    
+    directives:
+      preCopy:
+        - kind: RUN
+          value: apt-get update && apt-get -y install libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1
+        - kind: RUN
+          value: pip install --no-cache-dir opencv-python pillow numpy pyyaml
+  
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 2
+      kind: http
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
