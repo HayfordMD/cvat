@@ -98,7 +98,7 @@ services:
       CVAT_BASE_URL:
       ONE_RUNNING_JOB_IN_QUEUE_PER_USER:
       CVAT_SERVERLESS_PLUGIN_ENABLED: 'true'
-      NUCLIO_HOST: host.docker.internal:8070
+      NUCLIO_HOST: nuclio:8070
     command: init run server
     labels:
       traefik.enable: "true"
