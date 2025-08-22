@@ -1,0 +1,31 @@
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip install --no-cache-dir \
+    segment-anything \
+    opencv-python-headless \
+    pillow \
+    pycocotools
+
+# Set working directory
+WORKDIR /opt/nuclio
+
+# Copy handler files
+COPY main.py model_handler.py /opt/nuclio/
+
+# Set environment
+ENV PYTHONPATH=/opt/nuclio
+
+# Entry point
+CMD ["python", "-m", "http.server", "8080"]
